@@ -1,7 +1,10 @@
 {
   "schemaVersion": 1,
-  "layout": "panel",
-  "title": { "fa": "خلاصه‌ی تخصیص لید", "en": "Lead assignment summary" },
+  "layout": "form",
+  "title": {
+    "fa": "خلاصه‌ی تخصیص لید",
+    "en": "Lead assignment summary"
+  },
   "description": {
     "fa": "آمار تخصیص هوشمند لید برای این کسب‌وکار.",
     "en": "Smart lead assignment stats for this business."
@@ -10,38 +13,158 @@
   "sections": [
     {
       "id": "business",
-      "title": { "fa": "کسب‌وکار", "en": "Business" },
+      "title": {
+        "fa": "کسب‌وکار",
+        "en": "Business"
+      },
       "items": [
-        { "type": "text", "key": "bizDomainTitle", "label": { "fa": "نام کسب‌وکار", "en": "Business name" } },
-        { "type": "text", "key": "installedAt", "label": { "fa": "زمان نصب", "en": "Installed at" } }
+        {
+          "type": "text",
+          "key": "bizDomainTitle",
+          "label": {
+            "fa": "نام کسب‌وکار",
+            "en": "Business name"
+          },
+          "required": false,
+          "maxLength": 200
+        },
+        {
+          "type": "text",
+          "key": "installedAt",
+          "label": {
+            "fa": "زمان نصب",
+            "en": "Installed at"
+          },
+          "required": false,
+          "maxLength": 200
+        }
       ]
     },
     {
       "id": "assignments",
-      "title": { "fa": "تخصیص‌ها", "en": "Assignments" },
+      "title": {
+        "fa": "تخصیص‌ها",
+        "en": "Assignments"
+      },
       "items": [
-        { "type": "text", "key": "totalAssignments", "label": { "fa": "کل تخصیص‌ها", "en": "Total assignments" } },
-        { "type": "text", "key": "todayAssignments", "label": { "fa": "تخصیص‌های امروز", "en": "Today's assignments" } },
-        { "type": "text", "key": "lastAssignedUser", "label": { "fa": "آخرین کارشناس", "en": "Last assigned rep" } },
-        { "type": "text", "key": "averageScore", "label": { "fa": "میانگین امتیاز", "en": "Average score" } }
+        {
+          "type": "text",
+          "key": "totalAssignments",
+          "label": {
+            "fa": "کل تخصیص‌ها",
+            "en": "Total assignments"
+          },
+          "required": false,
+          "maxLength": 200
+        },
+        {
+          "type": "text",
+          "key": "todayAssignments",
+          "label": {
+            "fa": "تخصیص‌های امروز",
+            "en": "Today's assignments"
+          },
+          "required": false,
+          "maxLength": 200
+        },
+        {
+          "type": "text",
+          "key": "lastAssignedUser",
+          "label": {
+            "fa": "آخرین کارشناس",
+            "en": "Last assigned rep"
+          },
+          "required": false,
+          "maxLength": 200
+        },
+        {
+          "type": "text",
+          "key": "averageScore",
+          "label": {
+            "fa": "میانگین امتیاز",
+            "en": "Average score"
+          },
+          "required": false,
+          "maxLength": 200
+        }
       ]
     },
     {
       "id": "team",
-      "title": { "fa": "تیم", "en": "Team" },
+      "title": {
+        "fa": "تیم",
+        "en": "Team"
+      },
       "items": [
-        { "type": "text", "key": "activeReps", "label": { "fa": "کارشناسان فعال", "en": "Active reps" } },
-        { "type": "text", "key": "pausedReps", "label": { "fa": "کارشناسان متوقف", "en": "Paused reps" } },
-        { "type": "text", "key": "totalDailyCapacity", "label": { "fa": "مجموع ظرفیت روزانه", "en": "Total daily capacity" } },
-        { "type": "checkbox", "key": "hasCapacityLeft", "label": { "fa": "ظرفیت امروز باقی است", "en": "Capacity left today" } }
+        {
+          "type": "text",
+          "key": "activeReps",
+          "label": {
+            "fa": "کارشناسان فعال",
+            "en": "Active reps"
+          },
+          "required": false,
+          "maxLength": 200
+        },
+        {
+          "type": "text",
+          "key": "pausedReps",
+          "label": {
+            "fa": "کارشناسان متوقف",
+            "en": "Paused reps"
+          },
+          "required": false,
+          "maxLength": 200
+        },
+        {
+          "type": "text",
+          "key": "totalDailyCapacity",
+          "label": {
+            "fa": "مجموع ظرفیت روزانه",
+            "en": "Total daily capacity"
+          },
+          "required": false,
+          "maxLength": 200
+        },
+        {
+          "type": "checkbox",
+          "key": "hasCapacityLeft",
+          "label": {
+            "fa": "ظرفیت امروز باقی است",
+            "en": "Capacity left today"
+          },
+          "required": false,
+          "defaultValue": false
+        }
       ]
     },
     {
       "id": "activity",
-      "title": { "fa": "فعالیت پلاگین", "en": "Plugin activity" },
+      "title": {
+        "fa": "فعالیت پلاگین",
+        "en": "Plugin activity"
+      },
       "items": [
-        { "type": "text", "key": "launchesLast24h", "label": { "fa": "اجراها در ۲۴ ساعت اخیر", "en": "Launches in last 24h" } },
-        { "type": "textarea", "key": "lastEventSummary", "label": { "fa": "آخرین رویداد", "en": "Last event" } }
+        {
+          "type": "text",
+          "key": "launchesLast24h",
+          "label": {
+            "fa": "اجراها در ۲۴ ساعت اخیر",
+            "en": "Launches in last 24h"
+          },
+          "required": false,
+          "maxLength": 200
+        },
+        {
+          "type": "textarea",
+          "key": "lastEventSummary",
+          "label": {
+            "fa": "آخرین رویداد",
+            "en": "Last event"
+          },
+          "required": false,
+          "maxLength": 2000
+        }
       ]
     }
   ]
