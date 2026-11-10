@@ -1,0 +1,29 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "didar-smart-lead",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "observability": { "enabled": true },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "didar-smart-lead-db",
+      "database_id": "492af856-1b55-463c-ac77-e9522bebc742",
+      "migrations_dir": "migrations"
+    }
+  ],
+
+  // Daily cleanup of expired runtime sessions, old rate-limit windows and API logs
+  "triggers": { "crons": ["0 3 * * *"] },
+
+  "vars": {
+    "DIDAR_ORIGIN": "https://app.didar.me",
+    "DIDAR_APP_URL": "https://app.didar.me",
+    "MARKETPLACE_URL": "https://marketplace.didar.me",
+    "RATE_LIMIT_PER_MINUTE": "120"
+  }
+
+  // Secrets (wrangler secret put <NAME>; locally in .dev.vars):
+  //   DIDAR_CLIENT_ID, DIDAR_CLIENT_SECRET, ENCRYPTION_KEY, DIDAR_INSTALLATION_URL
+}

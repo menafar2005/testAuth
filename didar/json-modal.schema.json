@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "layout": "form",
+  "title": { "fa": "تخصیص هوشمند لید", "en": "Smart lead assignment" },
+  "description": {
+    "fa": "معامله‌های انتخاب‌شده را به یک کارشناس تخصیص دهید، ظرفیت او را تنظیم کنید و اطلاعات لید، چرخش نوبتی و پیگیری را ثبت کنید.",
+    "en": "Assign the selected deals to a sales rep, set their capacity, and record lead profile, round-robin and follow-up details."
+  },
+  "loadOnOpen": false,
+  "sections": [
+    {
+      "id": "assignment",
+      "title": { "fa": "تخصیص", "en": "Assignment" },
+      "items": [
+        { "type": "text", "key": "assignedUserId", "label": { "fa": "شناسه‌ی کارشناس", "en": "Rep user ID" }, "required": true, "maxLength": 64, "defaultValue": "" },
+        { "type": "text", "key": "assignedUserName", "label": { "fa": "نام کارشناس", "en": "Rep name" }, "required": true, "maxLength": 120, "defaultValue": "" },
+        { "type": "text", "key": "score", "label": { "fa": "امتیاز لید (۰ تا ۱۰۰)", "en": "Lead score (0-100)" }, "required": true, "maxLength": 3, "defaultValue": "50" },
+        { "type": "text", "key": "priority", "label": { "fa": "اولویت (low / normal / high)", "en": "Priority (low / normal / high)" }, "required": false, "maxLength": 10, "defaultValue": "normal" },
+        { "type": "textarea", "key": "assignmentReason", "label": { "fa": "دلیل تخصیص", "en": "Assignment reason" }, "required": false, "maxLength": 2000, "defaultValue": "" },
+        { "type": "checkbox", "key": "notifyAssignee", "label": { "fa": "به کارشناس اطلاع داده شود", "en": "Notify the assignee" }, "required": false, "defaultValue": true },
+        { "type": "checkbox", "key": "overrideExistingOwner", "label": { "fa": "جایگزینی مسئول فعلی", "en": "Override the current owner" }, "required": false, "defaultValue": false }
+      ]
+    },
+    {
+      "id": "capacity",
+      "title": { "fa": "ظرفیت کارشناس", "en": "Rep capacity" },
+      "items": [
+        { "type": "checkbox", "key": "saveCapacity", "label": { "fa": "ظرفیت این کارشناس ذخیره شود", "en": "Save this rep's capacity" }, "required": false, "defaultValue": false },
+        { "type": "text", "key": "dailyCapacity", "label": { "fa": "ظرفیت روزانه", "en": "Daily capacity" }, "required": false, "maxLength": 4, "defaultValue": "10" },
+        { "type": "text", "key": "sortOrder", "label": { "fa": "ترتیب در چرخش", "en": "Rotation order" }, "required": false, "maxLength": 4, "defaultValue": "0" },
+        { "type": "text", "key": "pausedUntilDate", "label": { "fa": "توقف تا تاریخ (YYYY-MM-DD)", "en": "Paused until (YYYY-MM-DD)" }, "required": false, "maxLength": 10, "defaultValue": "" },
+        { "type": "checkbox", "key": "isActive", "label": { "fa": "کارشناس فعال است", "en": "Rep is active" }, "required": false, "defaultValue": true }
+      ]
+    },
+    {
+      "id": "lead-profile",
+      "title": { "fa": "مشخصات لید", "en": "Lead profile" },
+      "items": [
+        { "type": "text", "key": "leadSource", "label": { "fa": "منبع لید", "en": "Lead source" }, "required": false, "maxLength": 100, "defaultValue": "website" },
+        { "type": "text", "key": "campaignName", "label": { "fa": "نام کمپین", "en": "Campaign name" }, "required": false, "maxLength": 150, "defaultValue": "" },
+        { "type": "text", "key": "customerEmail", "label": { "fa": "ایمیل مشتری", "en": "Customer email" }, "required": false, "maxLength": 320, "defaultValue": "" },
+        { "type": "text", "key": "customerPhone", "label": { "fa": "تلفن مشتری", "en": "Customer phone" }, "required": false, "maxLength": 20, "defaultValue": "" },
+        { "type": "text", "key": "estimatedBudget", "label": { "fa": "بودجه‌ی تخمینی (ریال)", "en": "Estimated budget (IRR)" }, "required": false, "maxLength": 18, "defaultValue": "" },
+        { "type": "text", "key": "industry", "label": { "fa": "صنعت", "en": "Industry" }, "required": false, "maxLength": 100, "defaultValue": "" },
+        { "type": "textarea", "key": "leadDescription", "label": { "fa": "توضیحات لید", "en": "Lead description" }, "required": false, "maxLength": 4000, "defaultValue": "" },
+        { "type": "checkbox", "key": "isVip", "label": { "fa": "مشتری VIP است", "en": "VIP customer" }, "required": false, "defaultValue": false },
+        { "type": "checkbox", "key": "hasPriorPurchase", "label": { "fa": "قبلاً خرید داشته", "en": "Has a prior purchase" }, "required": false, "defaultValue": false },
+        { "type": "checkbox", "key": "isDuplicateSuspected", "label": { "fa": "احتمال تکراری بودن", "en": "Possible duplicate" }, "required": false, "defaultValue": false }
+      ]
+    },
+    {
+      "id": "round-robin",
+      "title": { "fa": "چرخش نوبتی", "en": "Round-robin" },
+      "items": [
+        { "type": "checkbox", "key": "updateRoundRobinPointer", "label": { "fa": "نوبت چرخش روی این کارشناس ثبت شود", "en": "Move the rotation pointer to this rep" }, "required": false, "defaultValue": true },
+        { "type": "checkbox", "key": "skipPausedUsers", "label": { "fa": "کارشناسان متوقف رد شوند", "en": "Skip paused reps" }, "required": false, "defaultValue": true },
+        { "type": "checkbox", "key": "respectDailyCapacity", "label": { "fa": "سقف ظرفیت روزانه رعایت شود", "en": "Respect daily capacity" }, "required": false, "defaultValue": true },
+        { "type": "textarea", "key": "roundRobinNote", "label": { "fa": "یادداشت چرخش", "en": "Rotation note" }, "required": false, "maxLength": 500, "defaultValue": "" }
+      ]
+    },
+    {
+      "id": "follow-up",
+      "title": { "fa": "پیگیری", "en": "Follow-up" },
+      "items": [
+        { "type": "text", "key": "followUpTitle", "label": { "fa": "عنوان پیگیری", "en": "Follow-up title" }, "required": false, "maxLength": 200, "defaultValue": "تماس اولیه" },
+        { "type": "text", "key": "followUpDate", "label": { "fa": "تاریخ پیگیری (YYYY-MM-DD)", "en": "Follow-up date (YYYY-MM-DD)" }, "required": false, "maxLength": 10, "defaultValue": "" },
+        { "type": "text", "key": "followUpTime", "label": { "fa": "ساعت پیگیری (HH:MM)", "en": "Follow-up time (HH:MM)" }, "required": false, "maxLength": 5, "defaultValue": "10:00" },
+        { "type": "textarea", "key": "followUpNotes", "label": { "fa": "یادداشت پیگیری", "en": "Follow-up notes" }, "required": false, "maxLength": 2000, "defaultValue": "" },
+        { "type": "checkbox", "key": "sendSms", "label": { "fa": "ارسال پیامک", "en": "Send SMS" }, "required": false, "defaultValue": false },
+        { "type": "checkbox", "key": "sendEmail", "label": { "fa": "ارسال ایمیل", "en": "Send email" }, "required": false, "defaultValue": false }
+      ]
+    },
+    {
+      "id": "confirmation",
+      "title": { "fa": "تأیید نهایی", "en": "Confirmation" },
+      "items": [
+        { "type": "textarea", "key": "internalComment", "label": { "fa": "توضیح داخلی", "en": "Internal comment" }, "required": false, "maxLength": 1000, "defaultValue": "" },
+        { "type": "checkbox", "key": "confirmAssignment", "label": { "fa": "تخصیص را تأیید می‌کنم", "en": "I confirm this assignment" }, "required": true, "defaultValue": false }
+      ]
+    }
+  ],
+  "submit": {
+    "label": { "fa": "ثبت تخصیص", "en": "Save assignment" },
+    "closeOnSuccess": true,
+    "successMessage": {
+      "fa": "تخصیص ثبت شد.",
+      "en": "Assignment saved."
+    }
+  }
+}

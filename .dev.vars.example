@@ -1,0 +1,9 @@
+# Copy to .dev.vars for `wrangler dev`. In production use `wrangler secret put <NAME>`.
+# From Developer Hub -> OAuth & access scopes
+DIDAR_CLIENT_ID=
+DIDAR_CLIENT_SECRET=
+# Developer Hub -> Share install link (used by /didar/install to add a one-time state)
+DIDAR_INSTALLATION_URL=
+# 32 random bytes, base64. Encrypts the installation ApiKey (AES-GCM).
+# node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+ENCRYPTION_KEY=
