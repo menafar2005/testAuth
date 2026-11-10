@@ -65,7 +65,7 @@ cp .dev.vars.example .dev.vars
 npm run dev
 ```
 
-Deploy:
+Deploy: the repo is connected to the Worker through Cloudflare's Git integration, so every merge to `main` builds and deploys it. Don't run `wrangler deploy` by hand. Secrets are set once and survive builds:
 
 ```bash
 npx wrangler secret put DIDAR_CLIENT_ID
@@ -81,10 +81,6 @@ npx wrangler secret put ENCRYPTION_KEY
 
 ```bash
 npx wrangler secret put DIDAR_INSTALLATION_URL
-```
-
-```bash
-npm run deploy
 ```
 
 `/didar/install` redirects the admin to the install link with a one-time `state`. The callback verifies that state when it exists.
