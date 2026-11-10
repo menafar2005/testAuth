@@ -11,12 +11,12 @@ Register these in Developer Hub → **App extensions**. `BASE` = **`https://dida
 
 | Extension | Locations | Address field | Value | Response |
 |---|---|---|---|---|
-| Links | Deals list, Deal details | URL | `BASE/didar/link` | White "Hello Didar!" page |
+| Links | Deals list, Deal details | URL | `BASE/didar/link` | White "Hello DIDAR!" page |
 | JSON modal | Deals list, Deal details | API endpoint + JSON schema | `BASE/didar/json-modal` + [`didar/json-modal.schema.json`](didar/json-modal.schema.json) | `{ succeeded, message, data }` |
-| Custom modal | Entry points: Deals list, Deal details | Iframe URL | `BASE/didar/custom-modal` | White "Hello Didar!" iframe |
-| Custom panel | Deal details, Person details | Iframe URL | `BASE/didar/custom-panel` | White "Hello Didar!" iframe |
+| Custom modal | Entry points: Deals list, Deal details | Iframe URL | `BASE/didar/custom-modal` | White "Hello DIDAR!" iframe |
+| Custom panel | Deal details, Person details | Iframe URL | `BASE/didar/custom-panel` | White "Hello DIDAR!" iframe |
 | JSON panel | Organization details | API endpoint + JSON data structure | `BASE/didar/json-panel` + [`didar/json-panel.structure.json`](didar/json-panel.structure.json) | `{ succeeded, message, data }` (see note) |
-| App settings | Custom UI | Iframe URL | `BASE/didar/settings` | White "Hello Didar!" iframe |
+| App settings | Custom UI | Iframe URL | `BASE/didar/settings` | White "Hello DIDAR!" iframe |
 
 Basic info → **Callback URL**: `BASE/didar/callback`. Scopes: **basicinfo** only, because the plugin reads nothing beyond the BizDomain info.
 

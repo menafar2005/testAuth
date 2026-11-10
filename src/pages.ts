@@ -1,7 +1,7 @@
 import { escapeHtml } from "./util";
 
 /** Plain white page used by every iframe / link extension. */
-export function helloPage(message = "Hello Didar!"): string {
+export function helloPage(message = "Hello DIDAR!"): string {
   return `<!doctype html>
 <html lang="en">
 <head>

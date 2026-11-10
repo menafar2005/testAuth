@@ -65,7 +65,7 @@ export async function installCallback(req: Request, env: Env, ctx: ExecutionCont
 // ---------- Links (Deals list + Deal details) ----------
 export async function linkExtension(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
   const r = await startRun(req, env, ctx, "link", { target: "extension", locations: MENU_LOCATIONS });
-  return r.ok ? linkPage("Hello Didar!") : linkPage(r.message, r.status);
+  return r.ok ? linkPage("Hello DIDAR!") : linkPage(r.message, r.status);
 }
 
 // ---------- Custom modal (Deals list + Deal details) / Custom panel (Deal + Person details) / Settings ----------
@@ -76,7 +76,7 @@ async function iframeExtension(
   const r = await startRun(req, env, ctx, kind, { target, locations });
   if (!r.ok) return framePage(env.DIDAR_ORIGIN, r.message, r.status);
   // Short server-side session (only its hash is in D1); lifetime = Runtime Token lifetime.
-  return framePage(env.DIDAR_ORIGIN, "Hello Didar!", 200, {
+  return framePage(env.DIDAR_ORIGIN, "Hello DIDAR!", 200, {
     "Set-Cookie": iframeCookie("didar_run", r.run.sessionId, r.run.expiresInSeconds),
   });
 }
