@@ -48,11 +48,12 @@ export default {
     const route = ROUTES[url.pathname];
     if (!route) return text(404, "Not found");
 
-    const method = route.json ? "POST" : "GET";
+    // JSON routes: POST (documented contract) and GET (what the live Didar app sends today); see json-ext.ts.
+    const allowed = route.json ? ["GET", "POST"] : ["GET"];
     if (req.method === "OPTIONS" && route.json) return new Response(null, { status: 204, headers: corsHeaders(env) });
-    if (req.method !== method) {
+    if (!allowed.includes(req.method)) {
       return route.json
-        ? json({ ok: false, message: "Method not allowed" }, { status: 405, headers: { ...corsHeaders(env), Allow: "POST, OPTIONS" } })
+        ? jsonReply(env, { ok: false, message: "Method not allowed" }, 405)
         : text(405, "Method not allowed", { Allow: "GET" });
     }
 

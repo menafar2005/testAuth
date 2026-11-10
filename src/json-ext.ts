@@ -4,6 +4,12 @@
 //   extension.submit -> reply { ok, message, errors?, close? } (forms only)
 // The body comes from the browser, so record ids and tenant come only from the Runtime Context (launchCode in the URL).
 // Assumption flagged in the docs: Didar appends ?launchCode= to the endpoint like for other extensions.
+//
+// Compatibility: as of 2026-11-10 the live Didar app still calls JSON endpoints with GET ?launchCode= and no body
+// (the previous contract); the form values then arrive in the Runtime Context (context.payload). Both are accepted:
+//   GET  -> modal: submit with values from context.payload; panel: load
+//   POST -> the documented { event, values } contract
+// Replies carry both `ok` (new) and `succeeded` (previous contract) so either frontend reads the result.
 import modalSchema from "../didar/json-modal.schema.json";
 import { LOC, MENU_LOCATIONS } from "./handlers";
 import { startRun } from "./run";
@@ -13,13 +19,14 @@ export function corsHeaders(env: Env): Record<string, string> {
   return {
     "Access-Control-Allow-Origin": env.DIDAR_ORIGIN,
     Vary: "Origin",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
   };
 }
 
 type JsonReply = { ok: boolean; message?: string; errors?: Record<string, string>; close?: boolean; data?: { values: Record<string, unknown> } };
-export const jsonReply = (env: Env, body: JsonReply, status = 200) => json(body, { status, headers: corsHeaders(env) });
+export const jsonReply = (env: Env, body: JsonReply, status = 200) =>
+  json({ ...body, succeeded: body.ok }, { status, headers: corsHeaders(env) });
 
 interface JsonRequest {
   event?: string;
@@ -70,7 +77,8 @@ export function validateValues(items: Item[], input: Record<string, unknown>) {
     let raw = it.readOnly ? it.defaultValue : input[key];
     const empty = raw === undefined || raw === null || (typeof raw === "string" && raw.trim() === "");
     if (empty) {
-      if (it.required && !(it.type === "checkbox")) errors[key] = `«${name}» الزامی است.`;
+      // A missing value falls back to defaultValue (Didar pre-fills it in the UI); required fails only without one.
+      if (it.required && it.type !== "checkbox" && it.defaultValue === undefined) errors[key] = `«${name}» الزامی است.`;
       raw = it.defaultValue ?? (it.type === "checkbox" ? false : null);
       if (it.type === "checkbox" && it.required && raw !== true) errors[key] = `«${name}» باید تأیید شود.`;
       values[key] = raw;
@@ -123,7 +131,8 @@ const NO_TENANT = "اطلاعات کسب‌وکار از دیدار دریافت
 
 // ---------- JSON modal (Deals list + Deal details) ----------
 export async function jsonModal(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-  const body = await readBody(req);
+  const legacy = req.method === "GET"; // live Didar today: GET ?launchCode=, values in context.payload
+  const body: JsonRequest | null = legacy ? { event: "extension.submit" } : await readBody(req);
   if (!body) return jsonReply(env, { ok: false, message: "بدنه‌ی درخواست JSON معتبر نیست." }, 400);
 
   if (body.event === "extension.load") {
@@ -131,12 +140,22 @@ export async function jsonModal(req: Request, env: Env, ctx: ExecutionContext): 
     return jsonReply(env, { ok: true, data: { values: { status: "New" } } });
   }
   if (body.event !== "extension.submit") return jsonReply(env, { ok: false, message: "درخواست ناشناخته است." });
+  const expect = { target: "extension" as const, locations: MENU_LOCATIONS };
 
-  // Field errors first, so the user can fix them without spending the launchCode.
-  const { values: v, errors } = validateValues(MODAL_ITEMS, body.values ?? {});
+  let r: Awaited<ReturnType<typeof startRun>> | null = null;
+  let input = body.values ?? {};
+  if (legacy) {
+    // Values are inside the Runtime Context, so the launch has to be exchanged before validating.
+    r = await startRun(req, env, ctx, "json_modal", expect);
+    if (!r.ok) return jsonReply(env, { ok: false, message: r.message });
+    input = r.run.context.payload ?? {};
+  }
+
+  // POST: field errors first, so the user can fix them without spending the launchCode.
+  const { values: v, errors } = validateValues(MODAL_ITEMS, input);
   if (Object.keys(errors).length) return jsonReply(env, { ok: false, message: "بعضی از مقادیر معتبر نیستند.", errors });
 
-  const r = await startRun(req, env, ctx, "json_modal", { target: "extension", locations: MENU_LOCATIONS }, v);
+  r ??= await startRun(req, env, ctx, "json_modal", expect, v);
   if (!r.ok) return jsonReply(env, { ok: false, message: r.message });
   const { context, bizDomainId } = r.run;
   if (!bizDomainId) return jsonReply(env, { ok: false, message: NO_TENANT });
@@ -167,7 +186,8 @@ export async function jsonModal(req: Request, env: Env, ctx: ExecutionContext): 
 
 // ---------- JSON panel (Organization details), layout "details" ----------
 export async function jsonPanel(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-  const body = await readBody(req);
+  // GET (live Didar today) is treated as extension.load; POST must say so in `event`.
+  const body: JsonRequest | null = req.method === "GET" ? { event: "extension.load" } : await readBody(req);
   if (!body) return jsonReply(env, { ok: false, message: "بدنه‌ی درخواست JSON معتبر نیست." }, 400);
   if (body.event !== "extension.load") return jsonReply(env, { ok: false, message: "این پنل فقط extension.load را می‌پذیرد." });
 

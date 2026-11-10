@@ -29,7 +29,11 @@ Both files follow Didar's "JSON extension structure v1" (https://didar-developer
 
 - **JSON modal** (`layout: "form"`, `loadOnOpen: false`): one section with one item of each of the 11 types. The input items are `assignedUserId` (text, required), `priority` (select), `assignmentMode` (radio), `score` (number, 0–100), `followUpDate` (date), `note` (textarea) and `updateRoundRobinPointer` (checkbox). The display items are `message`, `divider`, `value` (`status`) and `link`.
 - **JSON panel** (`layout: "details"`, `loadOnOpen: true`): display items only: `message`, three `value` items (`totalAssignments`, `todayAssignments`, `lastAssignment`), `divider` and `link`.
-- **Endpoint contract**: Didar sends `POST` with `{ event, runtimeId, context, values }`, and CORS allows `POST, OPTIONS`.
+- **Compatibility**: on 2026-11-10 the live Didar app still called the JSON endpoints with `GET ?launchCode=` and no body, which is the previous contract. Both are accepted:
+  - `GET` on the modal is a submit, with the values taken from the Runtime Context's `payload`.
+  - `GET` on the panel is a load.
+  - Replies carry both `ok` and `succeeded`. Once Didar has switched to `POST`, the `GET` branch in `src/json-ext.ts` can be removed.
+- **Endpoint contract** (per the docs): Didar sends `POST` with `{ event, runtimeId, context, values }`, and CORS allows `GET, POST, OPTIONS`.
   - On `extension.submit`, `values` is re-validated against the same file on the server (required, min/max, minLength/maxLength, options, types). Invalid values return per-field `errors` without spending the launchCode.
   - The panel answers `extension.load` with `data.values`.
   - Record ids and the tenant come only from the Runtime Context. One assumption is still unconfirmed in the docs: that Didar appends `?launchCode=` to the JSON endpoint as it does for the other extensions.
