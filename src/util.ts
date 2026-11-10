@@ -88,8 +88,16 @@ export function redactJsonText(raw: string | null | undefined, extra: string[] =
   try {
     return JSON.stringify(redactDeep(JSON.parse(raw), extra)).slice(0, max);
   } catch {
-    return "[non-json body omitted]";
+    // Non-JSON (e.g. a Cloudflare "error code: 502" page): keep it so the real error is visible,
+    // but mask anything that looks like a JWT or a long opaque token.
+    return ("[text] " + maskTokens(raw)).slice(0, Math.min(max, 2000));
   }
+}
+
+export function maskTokens(s: string): string {
+  return s
+    .replace(/eyJ[\w-]+\.[\w-]+\.[\w-]*/g, "[REDACTED_JWT]")
+    .replace(/\b[A-Za-z0-9+/_-]{40,}={0,2}/g, "[REDACTED]");
 }
 
 export function redactHeaders(h: Headers): string {

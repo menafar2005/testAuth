@@ -5,7 +5,7 @@ import { b64urlDecodeJson, Env, nowSec, randomToken, sha256Hex } from "./util";
 export type ExtensionKind = "link" | "json_modal" | "custom_modal" | "json_panel" | "custom_panel" | "settings";
 
 export interface StartedRun extends RuntimeRun {
-  bizDomainId: string;
+  bizDomainId: string | null; // null when neither the token nor biz-domain/info gave the tenant
   bizDomainTitle: string | null;
   sessionId: string; // raw value for the cookie; only its hash is stored
 }
@@ -29,24 +29,24 @@ export async function startRun(
     return { ok: false, status: 400, message: "این اکستنشن در این صفحه فعال نیست." };
   }
 
-  // Tenant comes from Didar itself (basicinfo scope is always on), never from query/form.
-  let biz: { Id: string; Title?: string } | null = null;
-  try {
-    biz = await didarApi(env, ctx, run.accessToken, "GET", "/api/v1/proxy/biz-domain/info");
-  } catch (e) {
-    if (!(e instanceof DidarError)) throw e;
-    console.error("biz-domain/info failed", e.status, e.code, e.traceId);
-    return { ok: false, status: 502, message: "اطلاعات کسب‌وکار از دیدار دریافت نشد." };
-  }
-  const bizDomainId = biz?.Id ?? "";
-
-  // Decode (not verify) the token if it is a JWT, for the informational columns.
+  // Decode the token if it is a JWT. It came straight from the marketplace in exchange for our client
+  // secret, so its claims are as trustworthy as the context (the signature is not verified here).
   const parts = run.accessToken.split(".");
   const header = parts.length === 3 ? b64urlDecodeJson(parts[0]) : null;
   const claims = parts.length === 3 ? b64urlDecodeJson(parts[1]) : null;
   const num = (v: unknown) => (typeof v === "number" ? v : null);
   const str = (v: unknown) => (v == null ? null : String(v));
   const userId = str(claims?.["sub"] ?? claims?.["userId"] ?? claims?.["UserId"] ?? claims?.["uid"]);
+
+  // Tenant, never from query/form: 1) a BizDomain claim in the token, 2) GET biz-domain/info (one retry on 5xx).
+  // If both fail the run continues with bizDomainId = null; handlers that write tenant data must check it.
+  let bizDomainId = bizDomainClaim(claims);
+  let bizDomainTitle: string | null = null;
+  if (!bizDomainId) {
+    const biz = await fetchBizDomain(env, ctx, run.accessToken);
+    bizDomainId = biz?.Id ?? null;
+    bizDomainTitle = biz?.Title ?? null;
+  }
 
   const sessionId = randomToken(24);
   const expiresAt = nowSec() + run.expiresInSeconds;
@@ -74,5 +74,29 @@ export async function startRun(
     ).bind(bizDomainId, c.runtimeId, kind, c.entityType, c.location, JSON.stringify(c.entityIds), JSON.stringify(c.payload).slice(0, 16000)),
   ]);
 
-  return { ok: true, run: { ...run, bizDomainId, bizDomainTitle: biz?.Title ?? null, sessionId } };
+  return { ok: true, run: { ...run, bizDomainId, bizDomainTitle, sessionId } };
+}
+
+const GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** First claim whose name contains "bizdomain" (any case/separator) and whose value is a GUID. */
+function bizDomainClaim(claims: Record<string, unknown> | null): string | null {
+  if (!claims) return null;
+  for (const [k, v] of Object.entries(claims)) {
+    if (k.toLowerCase().replace(/[^a-z]/g, "").includes("bizdomain") && typeof v === "string" && GUID.test(v)) return v;
+  }
+  return null;
+}
+
+export async function fetchBizDomain(env: Env, ctx: ExecutionContext, accessToken: string): Promise<{ Id: string; Title?: string } | null> {
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      return await didarApi(env, ctx, accessToken, "GET", "/api/v1/proxy/biz-domain/info");
+    } catch (e) {
+      if (!(e instanceof DidarError)) throw e;
+      console.error("biz-domain/info failed", attempt, e.status, e.code, e.traceId);
+      if (e.status < 500) return null; // 4xx will not change on retry
+    }
+  }
+  return null;
 }

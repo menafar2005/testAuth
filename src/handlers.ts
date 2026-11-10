@@ -121,6 +121,7 @@ export async function jsonModal(req: Request, env: Env, ctx: ExecutionContext): 
   const r = await startRun(req, env, ctx, "json_modal", { target: "extension", locations: MENU_LOCATIONS });
   if (!r.ok) return reply(env, false, r.message);
   const { context, bizDomainId } = r.run;
+  if (!bizDomainId) return reply(env, false, "اطلاعات کسب‌وکار از دیدار دریافت نشد؛ کمی بعد دوباره امتحان کن.");
   if (context.entityType !== "deal" || context.entityIds.length === 0) return reply(env, false, "این فرم فقط روی معامله کار می‌کند.");
 
   const { values: v, error } = validatePayload(context.payload);
@@ -188,6 +189,7 @@ export async function jsonPanel(req: Request, env: Env, ctx: ExecutionContext): 
   const r = await startRun(req, env, ctx, "json_panel", { target: "extension", locations: [LOC.ORG_DETAILS] });
   if (!r.ok) return reply(env, false, r.message);
   const biz = r.run.bizDomainId;
+  if (!biz) return reply(env, false, "اطلاعات کسب‌وکار از دیدار دریافت نشد؛ کمی بعد دوباره امتحان کن.");
 
   const [inst, totals, today, last, team, launches, lastEvent] = await env.DB.batch<Record<string, any>>([
     env.DB.prepare(`SELECT installed_at FROM installations WHERE biz_domain_id = ?`).bind(biz),
