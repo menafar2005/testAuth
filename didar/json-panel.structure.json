@@ -1,169 +1,65 @@
 {
   "schemaVersion": 1,
-  "layout": "form",
+  "layout": "details",
   "title": {
     "fa": "خلاصه‌ی تخصیص لید",
     "en": "Lead assignment summary"
   },
   "description": {
-    "fa": "آمار تخصیص هوشمند لید برای این کسب‌وکار.",
-    "en": "Smart lead assignment stats for this business."
+    "fa": "آمار تخصیص لید برای این کسب‌وکار.",
+    "en": "Lead assignment stats for this business."
   },
   "loadOnOpen": true,
   "sections": [
     {
-      "id": "business",
+      "id": "summary",
       "title": {
-        "fa": "کسب‌وکار",
-        "en": "Business"
+        "fa": "خلاصه",
+        "en": "Summary"
       },
       "items": [
         {
-          "type": "text",
-          "key": "bizDomainTitle",
-          "label": {
-            "fa": "نام کسب‌وکار",
-            "en": "Business name"
+          "type": "message",
+          "text": {
+            "fa": "این اعداد از دیتابیس پلاگین خوانده می‌شوند.",
+            "en": "These numbers come from the plugin database."
           },
-          "required": false,
-          "maxLength": 200
+          "variant": "info"
         },
         {
-          "type": "text",
-          "key": "installedAt",
-          "label": {
-            "fa": "زمان نصب",
-            "en": "Installed at"
-          },
-          "required": false,
-          "maxLength": 200
-        }
-      ]
-    },
-    {
-      "id": "assignments",
-      "title": {
-        "fa": "تخصیص‌ها",
-        "en": "Assignments"
-      },
-      "items": [
-        {
-          "type": "text",
+          "type": "value",
           "key": "totalAssignments",
           "label": {
             "fa": "کل تخصیص‌ها",
             "en": "Total assignments"
-          },
-          "required": false,
-          "maxLength": 200
+          }
         },
         {
-          "type": "text",
+          "type": "value",
           "key": "todayAssignments",
           "label": {
             "fa": "تخصیص‌های امروز",
             "en": "Today's assignments"
-          },
-          "required": false,
-          "maxLength": 200
+          }
         },
         {
-          "type": "text",
-          "key": "lastAssignedUser",
+          "type": "value",
+          "key": "lastAssignment",
           "label": {
-            "fa": "آخرین کارشناس",
-            "en": "Last assigned rep"
-          },
-          "required": false,
-          "maxLength": 200
+            "fa": "آخرین تخصیص",
+            "en": "Last assignment"
+          }
         },
         {
-          "type": "text",
-          "key": "averageScore",
-          "label": {
-            "fa": "میانگین امتیاز",
-            "en": "Average score"
-          },
-          "required": false,
-          "maxLength": 200
-        }
-      ]
-    },
-    {
-      "id": "team",
-      "title": {
-        "fa": "تیم",
-        "en": "Team"
-      },
-      "items": [
-        {
-          "type": "text",
-          "key": "activeReps",
-          "label": {
-            "fa": "کارشناسان فعال",
-            "en": "Active reps"
-          },
-          "required": false,
-          "maxLength": 200
+          "type": "divider"
         },
         {
-          "type": "text",
-          "key": "pausedReps",
+          "type": "link",
           "label": {
-            "fa": "کارشناسان متوقف",
-            "en": "Paused reps"
+            "fa": "مشاهده وب‌سایت دیدار",
+            "en": "Visit Didar website"
           },
-          "required": false,
-          "maxLength": 200
-        },
-        {
-          "type": "text",
-          "key": "totalDailyCapacity",
-          "label": {
-            "fa": "مجموع ظرفیت روزانه",
-            "en": "Total daily capacity"
-          },
-          "required": false,
-          "maxLength": 200
-        },
-        {
-          "type": "checkbox",
-          "key": "hasCapacityLeft",
-          "label": {
-            "fa": "ظرفیت امروز باقی است",
-            "en": "Capacity left today"
-          },
-          "required": false,
-          "defaultValue": false
-        }
-      ]
-    },
-    {
-      "id": "activity",
-      "title": {
-        "fa": "فعالیت پلاگین",
-        "en": "Plugin activity"
-      },
-      "items": [
-        {
-          "type": "text",
-          "key": "launchesLast24h",
-          "label": {
-            "fa": "اجراها در ۲۴ ساعت اخیر",
-            "en": "Launches in last 24h"
-          },
-          "required": false,
-          "maxLength": 200
-        },
-        {
-          "type": "textarea",
-          "key": "lastEventSummary",
-          "label": {
-            "fa": "آخرین رویداد",
-            "en": "Last event"
-          },
-          "required": false,
-          "maxLength": 2000
+          "url": "https://didar.me"
         }
       ]
     }

@@ -18,6 +18,7 @@ export async function startRun(
   ctx: ExecutionContext,
   kind: ExtensionKind,
   expect: { target: "extension" | "settings_page"; locations?: number[] },
+  loggedPayload?: unknown, // validated JSON-extension values; defaults to context.payload
 ): Promise<StartResult> {
   const url = new URL(req.url);
   const run = await exchangeLaunchCode(env, ctx, url.searchParams.get("launchCode"));
@@ -71,7 +72,7 @@ export async function startRun(
     env.DB.prepare(
       `INSERT INTO extension_events (biz_domain_id, runtime_id, event_action, event_object, location, entity_ids, payload)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    ).bind(bizDomainId, c.runtimeId, kind, c.entityType, c.location, JSON.stringify(c.entityIds), JSON.stringify(c.payload).slice(0, 16000)),
+    ).bind(bizDomainId, c.runtimeId, kind, c.entityType, c.location, JSON.stringify(c.entityIds), JSON.stringify(loggedPayload ?? c.payload).slice(0, 16000)),
   ]);
 
   return { ok: true, run: { ...run, bizDomainId, bizDomainTitle, sessionId } };

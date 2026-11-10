@@ -1,18 +1,18 @@
-import {
-  corsHeaders, customModal, customPanel, installCallback, installStart, jsonModal, jsonPanel, linkExtension, settingsPage,
-} from "./handlers";
+import { customModal, customPanel, installCallback, installStart, linkExtension, settingsPage } from "./handlers";
+import { corsHeaders, jsonModal, jsonPanel, jsonReply } from "./json-ext";
 import { Env, json, nowSec, redactedQuery, redactHeaders, text } from "./util";
 
 type Handler = (req: Request, env: Env, ctx: ExecutionContext) => Promise<Response>;
 
 // Path -> handler. Register these exact URLs in Developer Hub.
-const ROUTES: Record<string, { handler: Handler; cors?: boolean }> = {
+// `json: true` routes are JSON extensions: POST + CORS for Didar's origin, replies in the { ok, message } contract.
+const ROUTES: Record<string, { handler: Handler; json?: boolean }> = {
   "/didar/install": { handler: (_r, env) => installStart(env) },
   "/didar/callback": { handler: installCallback },
   "/didar/link": { handler: linkExtension },
-  "/didar/json-modal": { handler: jsonModal, cors: true },
+  "/didar/json-modal": { handler: jsonModal, json: true },
   "/didar/custom-modal": { handler: customModal },
-  "/didar/json-panel": { handler: jsonPanel, cors: true },
+  "/didar/json-panel": { handler: jsonPanel, json: true },
   "/didar/custom-panel": { handler: customPanel },
   "/didar/settings": { handler: settingsPage },
 };
@@ -48,12 +48,17 @@ export default {
     const route = ROUTES[url.pathname];
     if (!route) return text(404, "Not found");
 
-    if (req.method === "OPTIONS" && route.cors) return new Response(null, { status: 204, headers: corsHeaders(env) });
-    if (req.method !== "GET") return text(405, "Method not allowed", { Allow: route.cors ? "GET, OPTIONS" : "GET" });
+    const method = route.json ? "POST" : "GET";
+    if (req.method === "OPTIONS" && route.json) return new Response(null, { status: 204, headers: corsHeaders(env) });
+    if (req.method !== method) {
+      return route.json
+        ? json({ ok: false, message: "Method not allowed" }, { status: 405, headers: { ...corsHeaders(env), Allow: "POST, OPTIONS" } })
+        : text(405, "Method not allowed", { Allow: "GET" });
+    }
 
     if (!(await rateLimit(req, env, url.pathname))) {
-      return route.cors
-        ? json({ succeeded: false, message: "تعداد درخواست‌ها زیاد است؛ کمی بعد دوباره امتحان کن." }, { status: 429, headers: corsHeaders(env) })
+      return route.json
+        ? jsonReply(env, { ok: false, message: "تعداد درخواست‌ها زیاد است؛ کمی بعد دوباره امتحان کن." }, 429)
         : text(429, "Too many requests");
     }
 
@@ -61,8 +66,8 @@ export default {
       return await route.handler(req, env, ctx);
     } catch (e) {
       console.error("unhandled", url.pathname, (e as Error).name, (e as Error).message);
-      return route.cors
-        ? json({ succeeded: false, message: "خطای داخلی پلاگین؛ دوباره امتحان کن." }, { status: 500, headers: corsHeaders(env) })
+      return route.json
+        ? jsonReply(env, { ok: false, message: "خطای داخلی پلاگین؛ دوباره امتحان کن." }, 500)
         : text(500, "Internal error");
     }
   },

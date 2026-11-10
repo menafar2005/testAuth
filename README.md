@@ -12,10 +12,10 @@ Register these in Developer Hub → **App extensions**. `BASE` = **`https://dida
 | Extension | Locations | Address field | Value | Response |
 |---|---|---|---|---|
 | Links | Deals list, Deal details | URL | `BASE/didar/link` | White "Hello DIDAR!" page |
-| JSON modal | Deals list, Deal details | API endpoint + JSON schema | `BASE/didar/json-modal` + [`didar/json-modal.schema.json`](didar/json-modal.schema.json) | `{ succeeded, message, data }` |
+| JSON modal | Deals list, Deal details | API endpoint + JSON schema | `BASE/didar/json-modal` + [`didar/json-modal.schema.json`](didar/json-modal.schema.json) | `POST` → `{ ok, message, errors?, close? }` |
 | Custom modal | Entry points: Deals list, Deal details | Iframe URL | `BASE/didar/custom-modal` | White "Hello DIDAR!" iframe |
 | Custom panel | Deal details, Person details | Iframe URL | `BASE/didar/custom-panel` | White "Hello DIDAR!" iframe |
-| JSON panel | Organization details | API endpoint + JSON data structure | `BASE/didar/json-panel` + [`didar/json-panel.structure.json`](didar/json-panel.structure.json) | `{ succeeded, message, data }` (see note) |
+| JSON panel | Organization details | API endpoint + JSON data structure | `BASE/didar/json-panel` + [`didar/json-panel.structure.json`](didar/json-panel.structure.json) | `POST` `extension.load` → `{ ok, data: { values } }` |
 | App settings | Custom UI | Iframe URL | `BASE/didar/settings` | White "Hello DIDAR!" iframe |
 
 Basic info → **Callback URL**: `BASE/didar/callback`. Scopes: **basicinfo** only, because the plugin reads nothing beyond the BizDomain info.
@@ -25,8 +25,14 @@ Capacity check: each menu location (Deals list, Deal details) has 3 menu extensi
 Every extension needs its own **JWT secret** in Developer Hub. Generate a separate 32-byte random value for each one and keep them only on the server.
 
 ### Notes on the JSON files
-- **JSON modal**: uses every schema key the docs publish (`schemaVersion`, `layout`, `title`, `description`, `loadOnOpen`, `sections[].id/title/items`, each item's `type/key/label/required/maxLength/defaultValue`, and `submit.label/closeOnSuccess/successMessage`). It also uses all three documented item types (`text`, `textarea`, `checkbox`) across 6 sections and 34 fields. Didar has not published any other field types yet, so the schema doesn't invent any.
-- **JSON panel**: Didar has **not published** the "JSON data structure" format or the panel request/response contract. The structure file and endpoint are an **assumption**: they mirror the modal schema and the `{ succeeded, message, data }` contract. Check them on a test BizDomain before relying on them.
+Both files follow Didar's "JSON extension structure v1" (https://didar-developers-docs.ehsan2005-ir.workers.dev/json-extension-schema). They validate against the official `didar-json-extension.schema.json`, which accepts no unknown keys.
+
+- **JSON modal** (`layout: "form"`, `loadOnOpen: false`): one section with one item of each of the 11 types. The input items are `assignedUserId` (text, required), `priority` (select), `assignmentMode` (radio), `score` (number, 0–100), `followUpDate` (date), `note` (textarea) and `updateRoundRobinPointer` (checkbox). The display items are `message`, `divider`, `value` (`status`) and `link`.
+- **JSON panel** (`layout: "details"`, `loadOnOpen: true`): display items only: `message`, three `value` items (`totalAssignments`, `todayAssignments`, `lastAssignment`), `divider` and `link`.
+- **Endpoint contract**: Didar sends `POST` with `{ event, runtimeId, context, values }`, and CORS allows `POST, OPTIONS`.
+  - On `extension.submit`, `values` is re-validated against the same file on the server (required, min/max, minLength/maxLength, options, types). Invalid values return per-field `errors` without spending the launchCode.
+  - The panel answers `extension.load` with `data.values`.
+  - Record ids and the tenant come only from the Runtime Context. One assumption is still unconfirmed in the docs: that Didar appends `?launchCode=` to the JSON endpoint as it does for the other extensions.
 
 ## Database (D1: `didar-smart-lead-db`, id `492af856-1b55-463c-ac77-e9522bebc742`)
 
@@ -47,7 +53,7 @@ Throughout, `company_id INTEGER` becomes `biz_domain_id TEXT`. The BizDomain alw
 
 What gets written where:
 - Every launch → `runtime_sessions` + `extension_events` + `external_api_calls` + `rate_limits`
-- JSON modal submit → `assignment_logs` (one row per selected deal), `assignment_state` (when "update pointer" is checked), `user_capacities` (when "save capacity" is checked)
+- JSON modal submit → `assignment_logs` (one row per selected deal, with `score`) and `assignment_state` (when the checkbox is checked or the mode is round-robin). All validated values are kept in `extension_events.payload`. `user_capacities` is not written by the form; the table stays in the schema.
 - Install callback → `installations`
 - JSON panel → reads the stats back
 
