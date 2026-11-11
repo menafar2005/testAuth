@@ -1,12 +1,12 @@
 // Shared launch flow for every extension: exchange launchCode, resolve BizDomain, record session + event in D1.
-import { didarApi, DidarError, exchangeLaunchCode, RuntimeRun } from "./didar";
+import { DidarError, didarOpenApi, exchangeLaunchCode, RuntimeRun } from "./didar";
 import { b64urlDecodeJson, Env, nowSec, randomToken, sha256Hex } from "./util";
 
 export type ExtensionKind = "link" | "json_modal" | "custom_modal" | "json_panel" | "custom_panel" | "settings";
 
 export interface StartedRun extends RuntimeRun {
-  bizDomainId: string | null; // null when neither the token nor biz-domain/info gave the tenant
-  bizDomainTitle: string | null;
+  bizDomainId: string | null; // null when neither the token nor the Didar OpenAPI gave the tenant
+  bizDomainTitle: string | null; // the Didar OpenAPI has no BizDomain-info endpoint, so this stays null
   sessionId: string; // raw value for the cookie; only its hash is stored
 }
 
@@ -39,15 +39,10 @@ export async function startRun(
   const str = (v: unknown) => (v == null ? null : String(v));
   const userId = str(claims?.["sub"] ?? claims?.["userId"] ?? claims?.["UserId"] ?? claims?.["uid"]);
 
-  // Tenant, never from query/form: 1) a BizDomain claim in the token, 2) GET biz-domain/info (one retry on 5xx).
+  // Tenant, never from query/form: 1) a BizDomain claim in the token, 2) the Didar OpenAPI (DIDAR_API_KEY).
   // If both fail the run continues with bizDomainId = null; handlers that write tenant data must check it.
-  let bizDomainId = bizDomainClaim(claims);
-  let bizDomainTitle: string | null = null;
-  if (!bizDomainId) {
-    const biz = await fetchBizDomain(env, ctx, run.accessToken);
-    bizDomainId = biz?.Id ?? null;
-    bizDomainTitle = biz?.Title ?? null;
-  }
+  const bizDomainId = bizDomainClaim(claims) ?? (await fetchBizDomainId(env, ctx));
+  const bizDomainTitle: string | null = null;
 
   const sessionId = randomToken(24);
   const expiresAt = nowSec() + run.expiresInSeconds;
@@ -89,14 +84,23 @@ function bizDomainClaim(claims: Record<string, unknown> | null): string | null {
   return null;
 }
 
-export async function fetchBizDomain(env: Env, ctx: ExecutionContext, accessToken: string): Promise<{ Id: string; Title?: string } | null> {
-  for (let attempt = 1; attempt <= 2; attempt++) {
+// The Didar OpenAPI has no BizDomain-info endpoint (the marketplace's /api/v1/proxy/biz-domain/info has no
+// equivalent there). These reference lists carry BizDomainId on every item; the first non-empty one wins.
+// https://developers.didar.me/Lost-Reasons · /Tags · /Get-Custom-Fields
+const BIZ_DOMAIN_SOURCES = ["/api/Deal/GetLostReasons", "/api/Tag/GetTagList", "/api/customfield/GetCustomfieldList"];
+
+export async function fetchBizDomainId(env: Env, ctx: ExecutionContext): Promise<string | null> {
+  for (const path of BIZ_DOMAIN_SOURCES) {
     try {
-      return await didarApi(env, ctx, accessToken, "GET", "/api/v1/proxy/biz-domain/info");
+      const res = await didarOpenApi<unknown>(env, ctx, path);
+      // Lost reasons / tags are arrays; custom fields are an object keyed by field id.
+      const items = Array.isArray(res) ? res : res && typeof res === "object" ? Object.values(res) : [];
+      const id = (items as { BizDomainId?: unknown }[]).find((i) => typeof i?.BizDomainId === "string" && GUID.test(i.BizDomainId))?.BizDomainId;
+      if (typeof id === "string") return id;
     } catch (e) {
       if (!(e instanceof DidarError)) throw e;
-      console.error("biz-domain/info failed", attempt, e.status, e.code, e.traceId);
-      if (e.status < 500) return null; // 4xx will not change on retry
+      console.error("didar openapi failed", path, e.status, e.code);
+      if (e.code === "DIDAR_API_KEY_MISSING" || e.status === 401) return null; // same result for every source
     }
   }
   return null;

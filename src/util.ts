@@ -4,6 +4,7 @@ export interface Env {
   DIDAR_CLIENT_SECRET: string;
   ENCRYPTION_KEY: string;
   DIDAR_INSTALLATION_URL?: string;
+  DIDAR_API_KEY?: string; // Didar OpenAPI key (secret), sent as ?apikey= to app.didar.me
   DIDAR_ORIGIN: string;
   DIDAR_APP_URL: string;
   MARKETPLACE_URL: string;
@@ -104,6 +105,17 @@ export function redactHeaders(h: Headers): string {
   const out: Record<string, string> = {};
   h.forEach((v, k) => (out[k] = SECRET_KEYS.has(k.toLowerCase()) ? "[REDACTED]" : v));
   return JSON.stringify(out);
+}
+
+/** Full URL with secret query params (apikey, launchCode, code, state, ...) masked. */
+export function redactUrl(raw: string): string {
+  try {
+    const u = new URL(raw);
+    const q = redactedQuery(u);
+    return `${u.origin}${u.pathname}${q ? "?" + q : ""}`;
+  } catch {
+    return "[unparseable url]";
+  }
 }
 
 export function redactedQuery(url: URL): string {

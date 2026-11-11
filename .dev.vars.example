@@ -4,6 +4,8 @@ DIDAR_CLIENT_ID=
 DIDAR_CLIENT_SECRET=
 # Developer Hub -> Share install link (used by /didar/install to add a one-time state)
 DIDAR_INSTALLATION_URL=
+# Didar OpenAPI key (Didar -> Settings -> Connect to other servers -> Connect to Didar). Sent as ?apikey= to app.didar.me
+DIDAR_API_KEY=
 # 32 random bytes, base64. Encrypts the installation ApiKey (AES-GCM).
 # node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ENCRYPTION_KEY=

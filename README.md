@@ -53,7 +53,7 @@ Schema: [`migrations/0001_init.sql`](migrations/0001_init.sql). It is already ap
 | external_api_calls | external_api_calls | Secrets, launchCodes, tokens and the ApiKey are redacted |
 | rate_limits | rate_limits | Per IP + route, 60s window. Query and headers are redacted |
 
-Throughout, `company_id INTEGER` becomes `biz_domain_id TEXT`. The BizDomain always comes from `GET /api/v1/proxy/biz-domain/info` called with the Runtime Token, never from the query string. The migration also adds the indexes the original database was missing. A daily cron deletes expired sessions, old rate-limit windows, and API logs older than 30 days.
+Throughout, `company_id INTEGER` becomes `biz_domain_id TEXT`. The BizDomain never comes from the query string. It is read from a BizDomain claim in the Runtime Token if there is one. Otherwise it comes from the **Didar OpenAPI** with `DIDAR_API_KEY`. The OpenAPI has no BizDomain-info endpoint, so the `BizDomainId` is taken from the first non-empty list among `POST /api/Deal/GetLostReasons`, `POST /api/Tag/GetTagList` and `POST /api/customfield/GetCustomfieldList`. The plugin calls no marketplace data-proxy endpoint (`marketplace.didar.me/api/v1/proxy/...`). Only the Runtime Token exchange and `CompleteInstallation` stay on the marketplace flow. The migration also adds the indexes the original database was missing. A daily cron deletes expired sessions, old rate-limit windows, and API logs older than 30 days.
 
 What gets written where:
 - Every launch → `runtime_sessions` + `extension_events` + `external_api_calls` + `rate_limits`
@@ -92,5 +92,11 @@ npx wrangler secret put ENCRYPTION_KEY
 ```bash
 npx wrangler secret put DIDAR_INSTALLATION_URL
 ```
+
+```bash
+npx wrangler secret put DIDAR_API_KEY
+```
+
+`DIDAR_API_KEY` is the Didar OpenAPI key (Didar → Settings → Connect to other servers → Connect to Didar). You can also add it in the Cloudflare dashboard (Worker → Settings → Variables and Secrets) as type **Secret**. Don't use a plaintext variable: Git deploys overwrite plaintext variables with the `vars` in `wrangler.jsonc`.
 
 `/didar/install` redirects the admin to the install link with a one-time `state`. The callback verifies that state when it exists.

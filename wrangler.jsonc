@@ -25,5 +25,6 @@
   }
 
   // Secrets (wrangler secret put <NAME>; locally in .dev.vars):
-  //   DIDAR_CLIENT_ID, DIDAR_CLIENT_SECRET, ENCRYPTION_KEY, DIDAR_INSTALLATION_URL
+  //   DIDAR_CLIENT_ID, DIDAR_CLIENT_SECRET, ENCRYPTION_KEY, DIDAR_INSTALLATION_URL,
+  //   DIDAR_API_KEY (Didar OpenAPI key; add it as a Secret, not a plaintext variable: deploys overwrite plaintext vars)
 }

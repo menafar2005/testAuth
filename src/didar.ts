@@ -1,5 +1,6 @@
-// Didar marketplace client. Every outgoing call is logged to external_api_calls (redacted).
-import { Env, nowIso, redactHeaders, redactJsonText } from "./util";
+// Didar clients: marketplace (install + Runtime Token) and Didar OpenAPI (data). Every outgoing call is logged
+// to external_api_calls with secrets, launchCodes, tokens and the apikey redacted.
+import { Env, nowIso, redactHeaders, redactJsonText, redactUrl } from "./util";
 
 export interface RuntimeContext {
   target: "extension" | "settings_page";
@@ -53,7 +54,7 @@ async function loggedFetch(
     )
       .bind(
         bizDomainId, service, startedIso, nowIso(), Date.now() - started,
-        init.method ?? "GET", url, redactHeaders(reqHeaders), redactJsonText(init.body as string | undefined, ["code"]),
+        init.method ?? "GET", redactUrl(url), redactHeaders(reqHeaders), redactJsonText(init.body as string | undefined, ["code"]),
         res?.status ?? null, res?.statusText ?? null, res ? redactHeaders(res.headers) : null,
         redactJsonText(raw), res?.ok ? 1 : 0, error?.name ?? null, error?.message ?? null,
       )
@@ -89,26 +90,20 @@ export async function exchangeLaunchCode(env: Env, ctx: ExecutionContext, launch
   return data;
 }
 
-/** Proxy data API with the Runtime Token; returns data.Response. */
-export async function didarApi<T = any>(
-  env: Env,
-  ctx: ExecutionContext,
-  accessToken: string,
-  method: string,
-  path: string,
-  payload?: unknown,
-  bizDomainId = "",
-): Promise<T> {
-  const headers: Record<string, string> = { Authorization: `Bearer ${accessToken}` };
-  if (payload === undefined) headers.Accept = "application/json";
-  else headers["Content-Type"] = "application/json";
-  const { status, body } = await loggedFetch(env, ctx, `didar.proxy ${method} ${path.split("?")[0]}`, env.MARKETPLACE_URL + path, {
-    method,
-    headers,
+/**
+ * Didar OpenAPI (https://developers.didar.me): POST https://app.didar.me<path>?apikey=DIDAR_API_KEY, result under `Response`.
+ * Replaces the marketplace data proxy (marketplace.didar.me/api/v1/proxy/...). The apikey is masked in logs.
+ */
+export async function didarOpenApi<T = any>(env: Env, ctx: ExecutionContext, path: string, payload?: unknown, bizDomainId = ""): Promise<T> {
+  if (!env.DIDAR_API_KEY) throw new DidarError(0, "DIDAR_API_KEY_MISSING", null);
+  const url = `${env.DIDAR_APP_URL}${path}?apikey=${encodeURIComponent(env.DIDAR_API_KEY)}`;
+  const { status, body } = await loggedFetch(env, ctx, `didar.openapi POST ${path}`, url, {
+    method: "POST",
+    headers: payload === undefined ? { Accept: "application/json" } : { "Content-Type": "application/json", Accept: "application/json" },
     body: payload === undefined ? undefined : JSON.stringify(payload),
   }, bizDomainId);
-  if (status < 200 || status >= 300 || !body?.succeeded) throw new DidarError(status, body?.error?.code ?? null, body?.meta?.traceId ?? null);
-  return body.data?.Response as T;
+  if (status < 200 || status >= 300 || !body || !("Response" in body)) throw new DidarError(status, null, null);
+  return body.Response as T;
 }
 
 export interface InstallationData {
