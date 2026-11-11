@@ -9,6 +9,18 @@ Docs it follows: https://didar-developers-docs.ehsan2005-ir.workers.dev/plugin-a
 
 Register these in Developer Hub → **App extensions**. `BASE` = **`https://didar-smart-lead.ehsan2005-ir.workers.dev`** (deployed).
 
+**Locations:** the backend no longer ties an extension to specific pages. Each launch's `context.location` from the Runtime Token must be one of Didar's Location codes, otherwise the run is rejected with «محل اجرای این اکستنشن معتبر نیست.»:
+
+| Code | Location | Code | Location |
+|---|---|---|---|
+| 1 | DealsList | 6 | CompanyDetail |
+| 2 | DealDetail | 7 | CaseList |
+| 3 | PersonList | 8 | CaseDetail |
+| 4 | PersonDetail | 9 | ActivitiesList |
+| 5 | CompanyList | | |
+
+App settings is the exception: there, Didar sends `location: null`, and that's the only accepted value. The Locations column below shows what was registered originally. You can register any extension on any page Developer Hub allows.
+
 | Extension | Locations | Address field | Value | Response |
 |---|---|---|---|---|
 | Links | Deals list, Deal details | URL | `BASE/didar/link` | White "Hello DIDAR!" page |

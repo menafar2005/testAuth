@@ -2,7 +2,21 @@
 import { DidarError, didarOpenApi, exchangeLaunchCode, RuntimeRun } from "./didar";
 import { b64urlDecodeJson, Env, nowSec, randomToken, sha256Hex } from "./util";
 
-export type ExtensionKind = "link" | "json_modal" | "custom_modal" | "json_panel" | "custom_panel" | "settings";
+// Didar extension locations, as returned in the Runtime Context (context.location).
+export const LOCATION = {
+  DealsList: 1,
+  DealDetail: 2,
+  PersonList: 3,
+  PersonDetail: 4,
+  CompanyList: 5,
+  CompanyDetail: 6,
+  CaseList: 7,
+  CaseDetail: 8,
+  ActivitiesList: 9,
+} as const;
+const VALID_LOCATIONS = new Set<number>(Object.values(LOCATION));
+
+export type ExtensionKind ="link" | "json_modal" | "custom_modal" | "json_panel" | "custom_panel" | "settings";
 
 export interface StartedRun extends RuntimeRun {
   bizDomainId: string | null; // null when neither the token nor the Didar OpenAPI gave the tenant
@@ -17,7 +31,7 @@ export async function startRun(
   env: Env,
   ctx: ExecutionContext,
   kind: ExtensionKind,
-  expect: { target: "extension" | "settings_page"; locations?: number[] },
+  expect: { target: "extension" | "settings_page" },
   loggedPayload?: unknown, // validated JSON-extension values; defaults to context.payload
 ): Promise<StartResult> {
   const url = new URL(req.url);
@@ -26,9 +40,10 @@ export async function startRun(
 
   const c = run.context;
   if (c.target !== expect.target) return { ok: false, status: 400, message: "این آدرس برای این نوع اجرا نیست." };
-  if (expect.locations && (c.location == null || !expect.locations.includes(c.location))) {
-    return { ok: false, status: 400, message: "این اکستنشن در این صفحه فعال نیست." };
-  }
+  // Extensions: location must be one of Didar's Location codes (1-9); any valid page is accepted.
+  // Settings page: Didar sends location = null by design.
+  const locationOk = c.target === "settings_page" ? c.location == null : c.location != null && VALID_LOCATIONS.has(c.location);
+  if (!locationOk) return { ok: false, status: 400, message: "محل اجرای این اکستنشن معتبر نیست." };
 
   // Decode the token if it is a JWT. It came straight from the marketplace in exchange for our client
   // secret, so its claims are as trustworthy as the context (the signature is not verified here).

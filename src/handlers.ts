@@ -4,9 +4,7 @@ import { framePage, linkPage } from "./pages";
 import { startRun } from "./run";
 import { Env, getCookie, iframeCookie, randomToken, text } from "./util";
 
-// Didar Location values (list_extensions)
-export const LOC = { DEALS_LIST: 1, DEAL_DETAILS: 2, PERSON_DETAILS: 4, ORG_DETAILS: 6 } as const;
-export const MENU_LOCATIONS = [LOC.DEALS_LIST, LOC.DEAL_DETAILS];
+// Every extension accepts any valid Didar Location (1-9); the check lives in startRun (see LOCATION in run.ts).
 
 // ---------- Install ----------
 export async function installStart(env: Env): Promise<Response> {
@@ -51,16 +49,16 @@ export async function installCallback(req: Request, env: Env, ctx: ExecutionCont
 
 // ---------- Links (Deals list + Deal details) ----------
 export async function linkExtension(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-  const r = await startRun(req, env, ctx, "link", { target: "extension", locations: MENU_LOCATIONS });
+  const r = await startRun(req, env, ctx, "link", { target: "extension" });
   return r.ok ? linkPage("Hello DIDAR!") : linkPage(r.message, r.status);
 }
 
-// ---------- Custom modal (Deals list + Deal details) / Custom panel (Deal + Person details) / Settings ----------
+// ---------- Custom modal / Custom panel / Settings (any valid location; settings has none) ----------
 async function iframeExtension(
   req: Request, env: Env, ctx: ExecutionContext,
-  kind: "custom_modal" | "custom_panel" | "settings", target: "extension" | "settings_page", locations?: number[],
+  kind: "custom_modal" | "custom_panel" | "settings", target: "extension" | "settings_page",
 ): Promise<Response> {
-  const r = await startRun(req, env, ctx, kind, { target, locations });
+  const r = await startRun(req, env, ctx, kind, { target });
   if (!r.ok) return framePage(env.DIDAR_ORIGIN, r.message, r.status);
   // Short server-side session (only its hash is in D1); lifetime = Runtime Token lifetime.
   return framePage(env.DIDAR_ORIGIN, "Hello DIDAR!", 200, {
@@ -68,8 +66,8 @@ async function iframeExtension(
   });
 }
 export const customModal = (req: Request, env: Env, ctx: ExecutionContext) =>
-  iframeExtension(req, env, ctx, "custom_modal", "extension", MENU_LOCATIONS);
+  iframeExtension(req, env, ctx, "custom_modal", "extension");
 export const customPanel = (req: Request, env: Env, ctx: ExecutionContext) =>
-  iframeExtension(req, env, ctx, "custom_panel", "extension", [LOC.DEAL_DETAILS, LOC.PERSON_DETAILS]);
+  iframeExtension(req, env, ctx, "custom_panel", "extension");
 export const settingsPage = (req: Request, env: Env, ctx: ExecutionContext) =>
   iframeExtension(req, env, ctx, "settings", "settings_page");

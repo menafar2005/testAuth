@@ -6,7 +6,7 @@ export interface RuntimeContext {
   target: "extension" | "settings_page";
   runtimeId: string;
   location: number | null;
-  entityType: "deal" | "case" | "person" | "company" | null;
+  entityType: "deal" | "case" | "person" | "company" | "activity" | null; // "activity": ActivitiesList (9)
   entityIds: string[];
   payload: Record<string, unknown>;
 }

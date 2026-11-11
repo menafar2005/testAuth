@@ -11,7 +11,6 @@
 //   POST -> the documented { event, values } contract
 // Replies carry both `ok` (new) and `succeeded` (previous contract) so either frontend reads the result.
 import modalSchema from "../didar/json-modal.schema.json";
-import { LOC } from "./handlers";
 import { startRun } from "./run";
 import { Env, json } from "./util";
 
@@ -163,14 +162,14 @@ export async function jsonModal(req: Request, env: Env, ctx: ExecutionContext): 
   return jsonReply(env, { ok: true, message: "اطلاعات ثبت شد.", close: true });
 }
 
-// ---------- JSON panel (Organization details), layout "details" ----------
+// ---------- JSON panel (any valid location), layout "details" ----------
 export async function jsonPanel(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
   // GET (live Didar today) is treated as extension.load; POST must say so in `event`.
   const body: JsonRequest | null = req.method === "GET" ? { event: "extension.load" } : await readBody(req);
   if (!body) return jsonReply(env, { ok: false, message: "بدنه‌ی درخواست JSON معتبر نیست." }, 400);
   if (body.event !== "extension.load") return jsonReply(env, { ok: false, message: "این پنل فقط extension.load را می‌پذیرد." });
 
-  const r = await startRun(req, env, ctx, "json_panel", { target: "extension", locations: [LOC.ORG_DETAILS] });
+  const r = await startRun(req, env, ctx, "json_panel", { target: "extension" });
   if (!r.ok) return jsonReply(env, { ok: false, message: r.message || INVALID_RUN });
   const biz = r.run.bizDomainId;
   if (!biz) return jsonReply(env, { ok: false, message: NO_TENANT });
