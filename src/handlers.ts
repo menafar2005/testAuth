@@ -56,18 +56,18 @@ export async function linkExtension(req: Request, env: Env, ctx: ExecutionContex
 // ---------- Custom modal / Custom panel / Settings (any valid location; settings has none) ----------
 async function iframeExtension(
   req: Request, env: Env, ctx: ExecutionContext,
-  kind: "custom_modal" | "custom_panel" | "settings", target: "extension" | "settings_page",
+  kind: "custom_modal" | "custom_panel" | "settings", target: "extension" | "settings_page", message = "Hello DIDAR!",
 ): Promise<Response> {
   const r = await startRun(req, env, ctx, kind, { target });
   if (!r.ok) return framePage(env.DIDAR_ORIGIN, r.message, r.status);
   // Short server-side session (only its hash is in D1); lifetime = Runtime Token lifetime.
-  return framePage(env.DIDAR_ORIGIN, "Hello DIDAR!", 200, {
+  return framePage(env.DIDAR_ORIGIN, message, 200, {
     "Set-Cookie": iframeCookie("didar_run", r.run.sessionId, r.run.expiresInSeconds),
   });
 }
 export const customModal = (req: Request, env: Env, ctx: ExecutionContext) =>
   iframeExtension(req, env, ctx, "custom_modal", "extension");
 export const customPanel = (req: Request, env: Env, ctx: ExecutionContext) =>
-  iframeExtension(req, env, ctx, "custom_panel", "extension");
+  iframeExtension(req, env, ctx, "custom_panel", "extension", "hello custom Panel!");
 export const settingsPage = (req: Request, env: Env, ctx: ExecutionContext) =>
   iframeExtension(req, env, ctx, "settings", "settings_page");
