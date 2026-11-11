@@ -11,7 +11,7 @@
 //   POST -> the documented { event, values } contract
 // Replies carry both `ok` (new) and `succeeded` (previous contract) so either frontend reads the result.
 import modalSchema from "../didar/json-modal.schema.json";
-import { LOC, MENU_LOCATIONS } from "./handlers";
+import { LOC } from "./handlers";
 import { startRun } from "./run";
 import { Env, json } from "./util";
 
@@ -129,7 +129,9 @@ export function validateValues(items: Item[], input: Record<string, unknown>) {
 const INVALID_RUN = "این اجرا معتبر نیست یا منقضی شده؛ اکستنشن را دوباره از دیدار باز کن.";
 const NO_TENANT = "اطلاعات کسب‌وکار از دیدار دریافت نشد؛ کمی بعد دوباره امتحان کن.";
 
-// ---------- JSON modal (Deals list + Deal details) ----------
+// ---------- JSON modal (any location the extension is registered on) ----------
+// Does nothing special: re-validates the values and stores the submission in extension_events
+// (event_action = 'json_modal', with location, entity type, entity ids and the values). Works without a tenant.
 export async function jsonModal(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
   const legacy = req.method === "GET"; // live Didar today: GET ?launchCode=, values in context.payload
   const body: JsonRequest | null = legacy ? { event: "extension.submit" } : await readBody(req);
@@ -140,7 +142,7 @@ export async function jsonModal(req: Request, env: Env, ctx: ExecutionContext): 
     return jsonReply(env, { ok: true, data: { values: { status: "New" } } });
   }
   if (body.event !== "extension.submit") return jsonReply(env, { ok: false, message: "درخواست ناشناخته است." });
-  const expect = { target: "extension" as const, locations: MENU_LOCATIONS };
+  const expect = { target: "extension" as const }; // no location / entity-type restriction
 
   let r: Awaited<ReturnType<typeof startRun>> | null = null;
   let input = body.values ?? {};
@@ -155,33 +157,10 @@ export async function jsonModal(req: Request, env: Env, ctx: ExecutionContext): 
   const { values: v, errors } = validateValues(MODAL_ITEMS, input);
   if (Object.keys(errors).length) return jsonReply(env, { ok: false, message: "بعضی از مقادیر معتبر نیستند.", errors });
 
+  // startRun has already stored the submission in extension_events (GET: the context payload; POST: validated values).
   r ??= await startRun(req, env, ctx, "json_modal", expect, v);
   if (!r.ok) return jsonReply(env, { ok: false, message: r.message });
-  const { context, bizDomainId } = r.run;
-  if (!bizDomainId) return jsonReply(env, { ok: false, message: NO_TENANT });
-  if (context.entityType !== "deal" || context.entityIds.length === 0) {
-    return jsonReply(env, { ok: false, message: "این فرم فقط روی معامله کار می‌کند." });
-  }
-
-  const userId = v.assignedUserId as string;
-  const movePointer = v.updateRoundRobinPointer === true || v.assignmentMode === "round_robin";
-  const stmts: D1PreparedStatement[] = context.entityIds.map((dealId) =>
-    env.DB.prepare(
-      `INSERT INTO assignment_logs (biz_domain_id, deal_id, assigned_user_id, score, source_location) VALUES (?, ?, ?, ?, ?)`,
-    ).bind(bizDomainId, dealId, userId, v.score as number | null, context.location),
-  );
-  if (movePointer) {
-    stmts.push(
-      env.DB.prepare(
-        `INSERT INTO assignment_state (biz_domain_id, last_assigned_user_id) VALUES (?, ?)
-         ON CONFLICT(biz_domain_id) DO UPDATE SET last_assigned_user_id = excluded.last_assigned_user_id, updated_at = CURRENT_TIMESTAMP`,
-      ).bind(bizDomainId, userId),
-    );
-  }
-  await env.DB.batch(stmts);
-
-  const n = context.entityIds.length;
-  return jsonReply(env, { ok: true, message: `${n} معامله به کارشناس ${userId} تخصیص داده شد.`, close: true });
+  return jsonReply(env, { ok: true, message: "اطلاعات ثبت شد.", close: true });
 }
 
 // ---------- JSON panel (Organization details), layout "details" ----------

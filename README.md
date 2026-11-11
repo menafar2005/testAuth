@@ -12,7 +12,7 @@ Register these in Developer Hub → **App extensions**. `BASE` = **`https://dida
 | Extension | Locations | Address field | Value | Response |
 |---|---|---|---|---|
 | Links | Deals list, Deal details | URL | `BASE/didar/link` | White "Hello DIDAR!" page |
-| JSON modal | Deals list, Deal details | API endpoint + JSON schema | `BASE/didar/json-modal` + [`didar/json-modal.schema.json`](didar/json-modal.schema.json) | `POST` → `{ ok, message, errors?, close? }` |
+| JSON modal | Any (currently Case list, Case details) | API endpoint + JSON schema | `BASE/didar/json-modal` + [`didar/json-modal.schema.json`](didar/json-modal.schema.json) | `POST` → `{ ok, message, errors?, close? }` |
 | Custom modal | Entry points: Deals list, Deal details | Iframe URL | `BASE/didar/custom-modal` | White "Hello DIDAR!" iframe |
 | Custom panel | Deal details, Person details | Iframe URL | `BASE/didar/custom-panel` | White "Hello DIDAR!" iframe |
 | JSON panel | Organization details | API endpoint + JSON data structure | `BASE/didar/json-panel` + [`didar/json-panel.structure.json`](didar/json-panel.structure.json) | `POST` `extension.load` → `{ ok, data: { values } }` |
@@ -57,7 +57,7 @@ Throughout, `company_id INTEGER` becomes `biz_domain_id TEXT`. The BizDomain nev
 
 What gets written where:
 - Every launch → `runtime_sessions` + `extension_events` + `external_api_calls` + `rate_limits`
-- JSON modal submit → `assignment_logs` (one row per selected deal, with `score`) and `assignment_state` (when the checkbox is checked or the mode is round-robin). All validated values are kept in `extension_events.payload`. `user_capacities` is not written by the form; the table stays in the schema.
+- JSON modal submit → one row in `extension_events` (`event_action = 'json_modal'`) with the location, entity type, entity ids and the form values in `payload`. Nothing else happens: there's no location or entity-type restriction, no tenant requirement and no assignment logic. Values are still re-validated against the schema, and invalid ones return per-field `errors`.
 - Install callback → `installations`
 - JSON panel → reads the stats back
 
