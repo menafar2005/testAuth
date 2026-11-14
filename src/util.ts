@@ -65,57 +65,16 @@ export function escapeHtml(s: unknown): string {
   return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 }
 
-// ---- Redaction: secrets, launchCodes and tokens never reach the DB ----
+// ---- Redaction for the rate_limits table only (the incoming request's headers and query) ----
+// external_api_calls (outgoing calls to Didar) is intentionally logged in full: see src/didar.ts.
 const SECRET_KEYS = new Set([
   "clientsecret", "launchcode", "state", "accesstoken", "apikey", "authorization", "cookie", "set-cookie", "token",
 ]);
-
-/** `extra` adds keys for this call only (e.g. "code" in request bodies; error.code in responses stays visible). */
-export function redactDeep(value: unknown, extra: string[] = []): unknown {
-  if (Array.isArray(value)) return value.map((v) => redactDeep(v, extra));
-  if (value && typeof value === "object") {
-    const out: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(value)) {
-      const lk = k.toLowerCase();
-      out[k] = SECRET_KEYS.has(lk) || extra.includes(lk) ? "[REDACTED]" : redactDeep(v, extra);
-    }
-    return out;
-  }
-  return value;
-}
-
-export function redactJsonText(raw: string | null | undefined, extra: string[] = [], max = 8000): string | null {
-  if (raw == null || raw === "") return null;
-  try {
-    return JSON.stringify(redactDeep(JSON.parse(raw), extra)).slice(0, max);
-  } catch {
-    // Non-JSON (e.g. a Cloudflare "error code: 502" page): keep it so the real error is visible,
-    // but mask anything that looks like a JWT or a long opaque token.
-    return ("[text] " + maskTokens(raw)).slice(0, Math.min(max, 2000));
-  }
-}
-
-export function maskTokens(s: string): string {
-  return s
-    .replace(/eyJ[\w-]+\.[\w-]+\.[\w-]*/g, "[REDACTED_JWT]")
-    .replace(/\b[A-Za-z0-9+/_-]{40,}={0,2}/g, "[REDACTED]");
-}
 
 export function redactHeaders(h: Headers): string {
   const out: Record<string, string> = {};
   h.forEach((v, k) => (out[k] = SECRET_KEYS.has(k.toLowerCase()) ? "[REDACTED]" : v));
   return JSON.stringify(out);
-}
-
-/** Full URL with secret query params (apikey, launchCode, code, state, ...) masked. */
-export function redactUrl(raw: string): string {
-  try {
-    const u = new URL(raw);
-    const q = redactedQuery(u);
-    return `${u.origin}${u.pathname}${q ? "?" + q : ""}`;
-  } catch {
-    return "[unparseable url]";
-  }
 }
 
 export function redactedQuery(url: URL): string {

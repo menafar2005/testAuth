@@ -1,6 +1,20 @@
 // Didar clients: marketplace (install + Runtime Token) and Didar OpenAPI (data). Every outgoing call is logged
-// to external_api_calls with secrets, launchCodes, tokens and the apikey redacted.
-import { Env, nowIso, redactHeaders, redactJsonText, redactUrl } from "./util";
+// to external_api_calls IN FULL and UNREDACTED, by request: the exact URL (including ?apikey=), all request and
+// response headers, and the raw request and response bodies (client secret, launchCode, Runtime Token, ApiKey, ...).
+// Treat the table as secret material.
+import { Env, nowIso } from "./util";
+
+// D1 rejects rows over ~2 MB, so a single logged value is cut at this length (and says so). Normal calls are far below it.
+const MAX_LOGGED_CHARS = 500_000;
+const clip = (s: string | null | undefined): string | null =>
+  s == null ? null : s.length > MAX_LOGGED_CHARS ? `${s.slice(0, MAX_LOGGED_CHARS)}…[truncated ${s.length - MAX_LOGGED_CHARS} chars]` : s;
+
+/** All headers as JSON, exactly as sent/received. Repeated headers (e.g. set-cookie) are joined with ", ". */
+function headersToJson(h: Headers): string {
+  const out: Record<string, string> = {};
+  h.forEach((v, k) => (out[k] = k in out ? `${out[k]}, ${v}` : v));
+  return JSON.stringify(out);
+}
 
 export interface RuntimeContext {
   target: "extension" | "settings_page";
@@ -54,9 +68,9 @@ async function loggedFetch(
     )
       .bind(
         bizDomainId, service, startedIso, nowIso(), Date.now() - started,
-        init.method ?? "GET", redactUrl(url), redactHeaders(reqHeaders), redactJsonText(init.body as string | undefined, ["code"]),
-        res?.status ?? null, res?.statusText ?? null, res ? redactHeaders(res.headers) : null,
-        redactJsonText(raw), res?.ok ? 1 : 0, error?.name ?? null, error?.message ?? null,
+        init.method ?? "GET", url, headersToJson(reqHeaders), clip(init.body as string | undefined),
+        res?.status ?? null, res?.statusText ?? null, res ? headersToJson(res.headers) : null,
+        res ? clip(raw) : null, res?.ok ? 1 : 0, error?.name ?? null, error?.message ?? null,
       )
       .run()
       .catch((e) => console.error("external_api_calls insert failed", e)),

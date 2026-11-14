@@ -101,7 +101,7 @@ CREATE TABLE IF NOT EXISTS extension_events (
   received_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- 7) Outgoing calls to Didar (secrets, launchCodes and tokens are redacted before insert)
+-- 7) Outgoing calls to Didar, stored in full and unredacted (secrets, launchCodes, tokens, apikey): treat as secret
 CREATE TABLE IF NOT EXISTS external_api_calls (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   biz_domain_id TEXT NOT NULL DEFAULT '',

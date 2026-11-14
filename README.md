@@ -62,7 +62,7 @@ Schema: [`migrations/0001_init.sql`](migrations/0001_init.sql). It is already ap
 | assignment_state | assignment_state | Keyed by `biz_domain_id` |
 | assignment_logs | assignment_logs | Deal/user IDs are GUID TEXT. Adds `source_location` |
 | webhook_events | extension_events | Didar has no webhooks, so every extension launch is logged here |
-| external_api_calls | external_api_calls | Secrets, launchCodes, tokens and the ApiKey are redacted |
+| external_api_calls | external_api_calls | **Logged in full, nothing redacted** (by request): the exact URL including `?apikey=`, all request and response headers, and the raw request and response bodies. That includes the client secret, launchCodes, Runtime Tokens and the installation ApiKey, so treat this table as secret. A single value is cut only past 500,000 characters (D1 rejects rows over ~2 MB). |
 | rate_limits | rate_limits | Per IP + route, 60s window. Query and headers are redacted |
 
 Throughout, `company_id INTEGER` becomes `biz_domain_id TEXT`. The BizDomain never comes from the query string. It is read from a BizDomain claim in the Runtime Token if there is one. Otherwise it comes from the **Didar OpenAPI** with `DIDAR_API_KEY`. The OpenAPI has no BizDomain-info endpoint, so the `BizDomainId` is taken from the first non-empty list among `POST /api/Deal/GetLostReasons`, `POST /api/Tag/GetTagList` and `POST /api/customfield/GetCustomfieldList`. The plugin calls no marketplace data-proxy endpoint (`marketplace.didar.me/api/v1/proxy/...`). Only the Runtime Token exchange and `CompleteInstallation` stay on the marketplace flow. The migration also adds the indexes the original database was missing. A daily cron deletes expired sessions, old rate-limit windows, and API logs older than 30 days.
